@@ -20,3 +20,6 @@ name = eth2
 solt = 0000:02:02.0
 #pcap = /tmp/kni_eth2.pcap
 ```
+
+***【注】<br>***
+***1、dpdk版本是18.05.1<br>***
