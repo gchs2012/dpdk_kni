@@ -5,7 +5,7 @@
 APP = kni
 
 # all source are stored in SRCS-y
-SRCS-y := main.c ss_config.c
+SRCS-y := main.c ss_config.c ss_pcap.c
 
 # Build using pkg-config variables if possible
 $(shell pkg-config --exists libdpdk)

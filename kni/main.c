@@ -53,6 +53,7 @@
 
 #include "ss_common.h"
 #include "ss_config.h"
+#include "ss_pcap.h"
 
 static rte_atomic32_t g_ctrl_core;
 
@@ -92,7 +93,7 @@ ss_pkt_send_to_port(uint16_t port_id, uint16_t queue_id,
         for (i = nb_tx; i < count; i++) {
             rte_pktmbuf_free(pkts_burst[i]);
         }
-        g_lcore_conf.kni_stat[port_id]->tx_dropped += (count - nb_tx);        
+        g_lcore_conf.kni_stat[port_id]->tx_dropped += (count - nb_tx);
     }
 
     g_lcore_conf.kni_stat[port_id]->tx_packets += nb_tx;
@@ -116,7 +117,7 @@ static int
 ss_pkt_recv_form_kernel(uint16_t port_id, uint16_t queue_id,
     struct rte_mbuf **pkts_burst, uint16_t count)
 {
-    uint16_t nb_kni_rx; 
+    uint16_t nb_kni_rx;
 
     SS_IGNORE_PARAM(queue_id);
 
@@ -191,11 +192,17 @@ ss_pkt_recv_from_port(uint16_t port_id, uint16_t queue_id,
 {
     int ret;
     uint16_t i;
+    struct ss_lcore_conf *qconf = &g_lcore_conf;
 
     SS_IGNORE_PARAM(queue_id);
 
     for (i = 0; i < count; i++) {
         struct rte_mbuf *rtem = pkts_burst[i];
+
+        if (unlikely(qconf->pcap[port_id] != NULL)) {
+            ss_dump_packets(qconf->pcap[port_id], rtem);
+        }
+
         ret = rte_ring_enqueue(g_lcore_conf.kni_rp[port_id], rtem);
         if (ret < 0) {
             rte_pktmbuf_free(rtem);
@@ -321,12 +328,15 @@ ss_logic_core_process(unsigned core_id)
 static void
 ss_ctrl_core_process(unsigned core_id)
 {
-    printf("The control core(%u) is ready...\n", core_id);
+    if (rte_eal_process_type() == RTE_PROC_PRIMARY) {
 
-    SS_CTRL_CORE_SUB(&g_ctrl_core);
+        printf("The control core(%u) is ready...\n", core_id);
 
-    while (1) {
-        sleep(10);
+        SS_CTRL_CORE_SUB(&g_ctrl_core);
+
+        while (1) {
+            sleep(10);
+        }
     }
 }
 
@@ -606,6 +616,11 @@ ss_init_port_start(void)
             } else {
                 printf("set port %u to promiscuous mode error\n", port_id);
             }
+        }
+
+        /* Enable pcap dump */
+        if (pc->pcap) {
+            ss_enable_pcap(pc->pcap);
         }
     }
 
