@@ -13,10 +13,10 @@ port_list = 0,1
 [port0]
 name = eth1
 solt = 0000:02:06.0
-pcap = /tmp/kni_ens38.pcap
+#pcap = /tmp/kni_eth1.pcap
 
 [port1]
 name = eth2
 solt = 0000:02:02.0
-pcap = /tmp/kni_ens34.pcap
+#pcap = /tmp/kni_eth2.pcap
 ```
